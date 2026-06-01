@@ -1,5 +1,5 @@
 import streamlit as st
-from youtube_analyzer import build_youtube_agent
+from youtube_analyzer import youtube_agent
 
 st.set_page_config(
     page_title="Youtube Video Analyzer",
@@ -10,7 +10,7 @@ st.title("🎥 AI Youtube Video Analyzer")
 
 @st.cache_resource
 def get_agent():
-    return build_youtube_agent()
+    return youtube_agent()
 
 
 agent = get_agent()
