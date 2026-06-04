@@ -42,8 +42,7 @@ if __name__ == "__main__":
     print("Similarity matrix (higher = more similar):\n")
     print(f"{'':>42}", end="")
     for t in texts:
-        print(f"  {t[:12]:>12}", end="")
-    print()
+        print(f"  {t[:12]:>12}", end="") 
 
     for i, t1 in enumerate(texts):
         print(f"{t1[:40]:>42}", end="")

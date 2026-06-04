@@ -49,7 +49,7 @@ def detect_doc_type(filename: str, text: str) -> DocType:
 
 # ── Stage 2: Clean markdown ───────────────────────────────────
 def clean_markdown(text: str) -> str:
-    text = re.sub(r"```[\s\S]*?```", "[code block]", text)  # strip code blocks
+    text = re.sub(r"```[\s\S]*?```", "[code block]", text)  # strip code blocks 
     text = re.sub(r"`([^`]+)`", r"\1", text)                # inline code → plain
     text = re.sub(r"#{1,6}\s+", "", text)                   # remove headings #
     text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)            # **bold** → plain
@@ -62,36 +62,78 @@ def clean_markdown(text: str) -> str:
 
 
 # ── Stage 3: Recursive chunker ────────────────────────────────
-def recursive_chunk(text: str, chunk_size: int = 300, overlap: int = 40) -> list[str]:
-    separators = ["\n\n", "\n", ". ", " "]
+from typing import List
+def recursive_chunk(
+    text: str,
+    chunk_size: int = 300,
+    overlap: int = 40
+) -> List[str]:
+    separators = ["\n\n", "\n", ". ", " ", ""]
 
-    def _split(t: str, seps: list[str]) -> list[str]:
-        if len(t) <= chunk_size or not seps:
-            return [t]
+    def split_recursive(text: str, seps: List[str]) -> List[str]:
+        if len(text) <= chunk_size:
+            return [text.strip()]
+        if not seps:
+            return [
+                text[i:i + chunk_size]
+                for i in range(0, len(text), chunk_size)
+            ]
         sep = seps[0]
-        if sep not in t:
-            return _split(t, seps[1:])
-        parts = t.split(sep)
-        results, buf = [], ""
-        for part in parts:
-            candidate = buf + sep + part if buf else part
+        # Character-level fallback
+        if sep == "":
+            return [
+                text[i:i + chunk_size]
+                for i in range(0, len(text), chunk_size)
+            ]
+        if sep not in text:
+            return split_recursive(text, seps[1:])
+
+        pieces = text.split(sep)
+        chunks = []
+        current = ""
+
+        for piece in pieces:
+            candidate = (
+                current + sep + piece
+                if current
+                else piece
+            )
+
             if len(candidate) <= chunk_size:
-                buf = candidate
+                current = candidate
             else:
-                if buf: results.append(buf.strip())
-                buf = _split(part, seps[1:])[0] if len(part) > chunk_size else part
-        if buf.strip(): results.append(buf.strip())
-        return results
+                if current:
+                    chunks.append(current.strip())
+                if len(piece) > chunk_size:
+                    chunks.extend(
+                        split_recursive(piece, seps[1:])
+                    )
+                    current = ""
+                else:
+                    current = piece
 
-    raw = _split(text, separators)
+        if current.strip():
+            chunks.append(current.strip())
 
-    # Add overlap from next chunk
-    final = []
-    for i, chunk in enumerate(raw):
-        if i + 1 < len(raw) and overlap > 0:
-            chunk = chunk + " " + raw[i + 1][:overlap]
-        final.append(chunk.strip())
-    return final
+        return chunks
+
+    raw_chunks = split_recursive(text, separators)
+    
+    # Apply overlap
+    final_chunks = []
+
+    for i, chunk in enumerate(raw_chunks):
+        if i > 0 and overlap > 0:
+            prev = raw_chunks[i - 1]
+            overlap_text = (
+                prev[-overlap:]
+                if len(prev) > overlap
+                else prev
+            )
+            chunk = overlap_text + " " + chunk
+        final_chunks.append(chunk.strip())
+
+    return final_chunks
 
 
 # ── Stage 4: Enrich with metadata ────────────────────────────
