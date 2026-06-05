@@ -46,3 +46,27 @@ Thumbs.db
 # Misc
 *.swp
 *~
+
+
+# Secrets / environment variables
+.env
+.env.*
+
+# API keys and credentials
+secrets.json
+credentials.json
+
+# Logs
+*.log
+
+# Secrets / environment variables
+.env
+.env.*
+
+# API keys and credentials
+secrets.json
+credentials.json
+
+# OS
+.DS_Store
+Thumbs.db
